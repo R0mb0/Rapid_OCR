@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapid OCR - Instant Text Extraction</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="./tailwind.js"></script>
+    <!-- Configure Tailwind for Dark Mode based on system preference -->
+    <script>
+        tailwind.config = {
+            darkMode: 'media',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            orange: '#f97316', // Tailwind orange-500
+                            orangeHover: '#ea580c', // Tailwind orange-600
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Tesseract.js for OCR -->
+    <script src="./tesseract.min.js"></script>
+    <style>
+        /* Custom scrollbar for the textarea */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+        @media (prefers-color-scheme: dark) {
+            textarea::-webkit-scrollbar-thumb {
+                background-color: #475569;
+            }
+        }
+        
+        /* Smooth transitions */
+        .fade-in { animation: fadeIn 0.3s ease-in forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
+
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-6xl flex flex-col">
+        
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-2">
+                Rapid <span class="text-brand-orange">OCR</span>
+            </h1>
+            <p class="text-gray-500 dark:text-gray-400">
+                Instant, secure, browser-based text extraction. <strong>Press Ctrl+V to start.</strong>
+            </p>
+        </header>
+
+        <!-- VIEW 1: Input Area (Dropzone) -->
+        <div id="view-input" class="flex-grow flex items-center justify-center fade-in">
+            <div id="dropzone" class="w-full max-w-2xl p-12 border-4 border-dashed border-gray-300 dark:border-gray-700 rounded-3xl bg-white dark:bg-gray-800 transition-all duration-300 hover:border-brand-orange dark:hover:border-brand-orange cursor-pointer group flex flex-col items-center justify-center text-center shadow-sm hover:shadow-lg">
+                <input type="file" id="fileInput" accept="image/*" class="hidden">
+                
+                <!-- Icon -->
+                <svg class="w-20 h-20 mb-6 text-gray-400 group-hover:text-brand-orange transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                </svg>
+                
+                <h3 class="text-2xl font-bold mb-2">Drag & Drop Image Here</h3>
+                <p class="text-gray-500 dark:text-gray-400 mb-6">or click to browse files</p>
+                
+                <div class="inline-block bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-2 font-mono text-sm font-semibold border border-gray-200 dark:border-gray-600">
+                    Pro tip: Just press <span class="text-brand-orange">Ctrl + V</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: Processing Area -->
+        <div id="view-processing" class="flex-grow flex flex-col items-center justify-center hidden fade-in">
+            <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-xl border border-gray-100 dark:border-gray-700 text-center">
+                <svg class="w-16 h-16 mx-auto mb-4 text-brand-orange animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <h3 id="progress-status" class="text-xl font-bold mb-4">Initializing OCR Engine...</h3>
+                
+                <!-- Progress Bar -->
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 mb-2 overflow-hidden">
+                    <div id="progress-bar" class="bg-brand-orange h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <p id="progress-text" class="text-sm text-gray-500 dark:text-gray-400 font-mono">0%</p>
+            </div>
+        </div>
+
+        <!-- VIEW 3: Results Area -->
+        <div id="view-result" class="w-full flex-grow flex-col hidden fade-in h-full">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-grow mb-8 h-[70vh]">
+                
+                <!-- Left Box: PDF Viewer -->
+                <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col h-full">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-between items-center">
+                        <h3 class="font-bold flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                            Searchable PDF
+                        </h3>
+                    </div>
+                    <div class="flex-grow p-0 w-full h-full relative bg-gray-100 dark:bg-gray-900">
+                        <!-- Object tag used to display PDF natively in browser -->
+                        <object id="pdf-viewer" class="w-full h-full absolute inset-0" type="application/pdf">
+                            <p class="p-6 text-center text-gray-500">Your browser does not support PDFs. Please download the PDF to view it.</p>
+                        </object>
+                    </div>
+                </div>
+
+                <!-- Right Box: Extracted Text -->
+                <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col h-full">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-between items-center">
+                        <h3 class="font-bold flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            Plain Text
+                        </h3>
+                    </div>
+                    <div class="flex-grow p-4 relative flex flex-col">
+                        <textarea id="result-text" class="w-full flex-grow resize-none bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 p-4 rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-orange font-mono text-sm" readonly placeholder="Extracted text will appear here..."></textarea>
+                        
+                        <!-- Copy Button -->
+                        <div class="absolute bottom-6 right-6">
+                            <button id="btn-copy" class="bg-gray-800 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md transition-all flex items-center gap-2 group">
+                                <svg class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                <span id="copy-text">Copy</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Bottom Reset Button -->
+            <div class="text-center pb-4">
+                <button id="btn-reset" class="bg-brand-orange hover:bg-brand-orangeHover text-white px-8 py-3 rounded-full font-bold shadow-lg transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2 mx-auto">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Reset (Ctrl + R)
+                </button>
+            </div>
+
+        </div>
+
+    </main>
+
+    <script>
+        // DOM Elements
+        const viewInput = document.getElementById('view-input');
+        const viewProcessing = document.getElementById('view-processing');
+        const viewResult = document.getElementById('view-result');
+        
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        
+        const progressStatus = document.getElementById('progress-status');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        
+        const pdfViewer = document.getElementById('pdf-viewer');
+        const resultText = document.getElementById('result-text');
+        
+        const btnCopy = document.getElementById('btn-copy');
+        const copyText = document.getElementById('copy-text');
+        const btnReset = document.getElementById('btn-reset');
+
+        // State to keep track of generated PDF URL to avoid memory leaks
+        let currentPdfUrl = null;
+
+        // --- View Management ---
+        function showView(viewName) {
+            viewInput.classList.add('hidden');
+            viewProcessing.classList.add('hidden');
+            viewResult.classList.add('hidden');
+            
+            if (viewName === 'input') viewInput.classList.remove('hidden');
+            if (viewName === 'processing') viewProcessing.classList.remove('hidden');
+            if (viewName === 'result') {
+                viewResult.classList.remove('hidden');
+                viewResult.classList.add('flex');
+            } else {
+                viewResult.classList.remove('flex');
+            }
+        }
+
+        function resetApp() {
+            if (currentPdfUrl) {
+                URL.revokeObjectURL(currentPdfUrl);
+                currentPdfUrl = null;
+            }
+            pdfViewer.data = '';
+            resultText.value = '';
+            progressBar.style.width = '0%';
+            progressText.innerText = '0%';
+            copyText.innerText = 'Copy';
+            showView('input');
+        }
+
+        // --- Core OCR Logic using Tesseract.js ---
+        async function processImage(imageFile) {
+            showView('processing');
+            progressStatus.innerText = 'Loading Tesseract Core...';
+            progressBar.style.width = '5%';
+
+            try {
+                // Initialize Worker with Local Paths
+                const worker = await Tesseract.createWorker('eng+ita+fra+spa+deu', 1, {
+                    workerPath: './worker.min.js',
+                    corePath: './tesseract-core.wasm.js',
+                    langPath: './tessdata', // Indica la cartella con i file delle lingue
+                    logger: m => {
+                        console.log(m);
+                        if (m.status === 'recognizing text') {
+                            progressStatus.innerText = 'Extracting Text...';
+                            const percent = Math.round(m.progress * 100);
+                            progressBar.style.width = `${percent}%`;
+                            progressText.innerText = `${percent}%`;
+                        } else {
+                            progressStatus.innerText = m.status.charAt(0).toUpperCase() + m.status.slice(1) + '...';
+                        }
+                    }
+                });
+
+                // Perform OCR and Generate PDF in one step
+                progressStatus.innerText = 'Extracting Text and PDF...';
+                const { data } = await worker.recognize(
+                    imageFile, 
+                    { pdfTitle: 'Rapid OCR Document' }, 
+                    { pdf: true } 
+                );
+                
+                // Convert ArrayBuffer to Blob using the generated pdf data
+                const pdfBlob = new Blob([new Uint8Array(data.pdf)], { type: 'application/pdf' });
+                currentPdfUrl = URL.createObjectURL(pdfBlob);
+
+                // Terminate worker to free memory
+                await worker.terminate();
+
+                // Update UI with results
+                resultText.value = data.text.trim() || "No text could be extracted from this image.";
+                pdfViewer.data = currentPdfUrl;
+                
+                showView('result');
+
+            } catch (error) {
+                console.error("OCR Error:", error);
+                alert("An error occurred during text extraction. Please try again with a different image.");
+                resetApp();
+            }
+        }
+
+        // --- Event Listeners: Input Methods ---
+
+        // 1. Click to browse
+        dropzone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                processImage(e.target.files[0]);
+            }
+        });
+
+        // 2. Drag and Drop
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('border-brand-orange', 'bg-gray-50', 'dark:bg-gray-700');
+        });
+        dropzone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-brand-orange', 'bg-gray-50', 'dark:bg-gray-700');
+        });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-brand-orange', 'bg-gray-50', 'dark:bg-gray-700');
+            
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                const file = e.dataTransfer.files[0];
+                if (file.type.startsWith('image/')) {
+                    processImage(file);
+                } else {
+                    alert('Please drop an image file.');
+                }
+            }
+        });
+
+        // 3. CTRL + V (Paste from clipboard)
+        window.addEventListener('paste', (e) => {
+            // Only capture paste if we are in the input view
+            if (!viewInput.classList.contains('hidden')) {
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                for (let index in items) {
+                    const item = items[index];
+                    if (item.kind === 'file' && item.type.startsWith('image/')) {
+                        const blob = item.getAsFile();
+                        processImage(blob);
+                        break; // Stop after first image found
+                    }
+                }
+            }
+        });
+
+        // --- Event Listeners: Actions ---
+
+        // Copy Text
+        btnCopy.addEventListener('click', () => {
+            resultText.select();
+            document.execCommand('copy'); // Fallback that works well in iframes
+            copyText.innerText = 'Copied!';
+            
+            // Revert text after 2 seconds
+            setTimeout(() => {
+                copyText.innerText = 'Copy';
+                window.getSelection().removeAllRanges();
+            }, 2000);
+        });
+
+        // Reset App (Button)
+        btnReset.addEventListener('click', resetApp);
+
+        // Reset App (CTRL + R)
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key.toLowerCase() === 'r') {
+                e.preventDefault(); // Prevent actual browser reload
+                // Visual feedback on the button if it's visible
+                if (!viewResult.classList.contains('hidden')) {
+                    btnReset.classList.add('scale-95', 'bg-brand-orangeHover');
+                    setTimeout(() => {
+                        btnReset.classList.remove('scale-95', 'bg-brand-orangeHover');
+                        resetApp();
+                    }, 150);
+                } else {
+                    resetApp();
+                }
+            }
+        });
+
+        // Initialize state
+        showView('input');
+    </script>
+</body>
+</html>
