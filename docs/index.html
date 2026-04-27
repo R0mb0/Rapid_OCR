@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rapid OCR - Instant Text Extraction</title>
     <!-- Tailwind CSS for styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="./tailwind.js"></script>
     <!-- Configure Tailwind for Dark Mode based on system preference -->
     <script>
         tailwind.config = {
@@ -23,7 +23,7 @@
         }
     </script>
     <!-- Tesseract.js for OCR -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="./tesseract.min.js"></script>
     <style>
         /* Custom scrollbar for the textarea */
         textarea::-webkit-scrollbar {
@@ -215,8 +215,11 @@
             progressBar.style.width = '5%';
 
             try {
-                // Initialize Worker correctly for Tesseract.js v5
+                // Initialize Worker with Local Paths
                 const worker = await Tesseract.createWorker('eng+ita+fra+spa+deu', 1, {
+                    workerPath: './worker.min.js',
+                    corePath: './tesseract-core.wasm.js',
+                    langPath: './tessdata', // Indica la cartella con i file delle lingue
                     logger: m => {
                         console.log(m);
                         if (m.status === 'recognizing text') {
