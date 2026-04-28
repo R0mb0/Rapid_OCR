@@ -17,9 +17,9 @@ A lightning-fast, privacy-first web app for offline text extraction. Paste (Ctrl
 
 ## [👉 Click here to launch the app! 👈](https://r0mb0.github.io/Rapid_OCR/)
 
-[![01.png](YOUR_SCREENSHOT_1_LINK_HERE)](https://r0mb0.github.io/Rapid_OCR/)
-[![02.png](YOUR_SCREENSHOT_2_LINK_HERE)](https://r0mb0.github.io/Rapid_OCR/)
-[![03.png](YOUR_SCREENSHOT_3_LINK_HERE)](https://r0mb0.github.io/Rapid_OCR/)
+[![01.png](https://github.com/R0mb0/Rapid_OCR/blob/main/Readme_imgs/01.png)](https://r0mb0.github.io/Rapid_OCR/)
+[![02.png](https://github.com/R0mb0/Rapid_OCR/blob/main/Readme_imgs/02.png)](https://r0mb0.github.io/Rapid_OCR/)
+[![03.png](https://github.com/R0mb0/Rapid_OCR/blob/main/Readme_imgs/03.png)](https://r0mb0.github.io/Rapid_OCR/)
 
 </div>
 <hr>
