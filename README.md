@@ -12,6 +12,17 @@
 A lightning-fast, privacy-first web app for offline text extraction. Paste (Ctrl+V) or drop any image to instantly generate plain text and a searchable PDF entirely within your browser using Tesseract.js. No server uploads required. Fast, secure, and ready to use! 🚀
 </p>
 
+<div align="center">
+  <a href="http://paypal.me/R0mb0">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/R0mb0/Support_the_dev_badge/blob/main/Badge/SVG/Support_the_dev_badge_Dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://github.com/R0mb0/Support_the_dev_badge/blob/main/Badge/SVG/Support_the_dev_badge_Light.svg">
+      <img alt="Saved you time? Support the dev" src="https://github.com/R0mb0/Support_the_dev_badge/blob/main/Badge/SVG/Support_the_dev_badge_Default.svg">
+    </picture>
+  </a>
+</div>
+
+
 ## [👉 Click here to launch the app! 👈](https://r0mb0.github.io/Rapid_OCR/)
 
 [![01.png](https://github.com/R0mb0/Rapid_OCR/blob/main/Readme_imgs/01.png)](https://r0mb0.github.io/Rapid_OCR/)
